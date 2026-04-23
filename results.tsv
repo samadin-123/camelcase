@@ -1,1 +1,2 @@
 thesis	attempt	metric	baseline	status	summary
+#1	thesis/1-cache-regex-test-results-to-avoid-repeated-pattern-matching	594452.0000	587467.0000	accepted	Caching regex test results for UPPERCASE and LOWERCASE patterns in Map data structures reduces redundant pattern matching operations. The cache is populated lazily on first access for each character. This provides a ~1.2% throughput improvement (587,467 → 594,452 ops/sec).
