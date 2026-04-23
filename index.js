@@ -3,6 +3,26 @@ const LOWERCASE = /[\p{Ll}]/u;
 const LEADING_CAPITAL = /^[\p{Lu}](?![\p{Lu}])/u;
 const SEPARATORS = /[_.\- ]+/;
 
+// Cache for regex test results to avoid repeated pattern matching
+const uppercaseCache = new Map();
+const lowercaseCache = new Map();
+
+const isUpperCase = char => {
+	if (!uppercaseCache.has(char)) {
+		uppercaseCache.set(char, UPPERCASE.test(char));
+	}
+
+	return uppercaseCache.get(char);
+};
+
+const isLowerCase = char => {
+	if (!lowercaseCache.has(char)) {
+		lowercaseCache.set(char, LOWERCASE.test(char));
+	}
+
+	return lowercaseCache.get(char);
+};
+
 // The |$ alternative allows matching at end-of-string, capturing empty string
 // This enables NUMBERS_AND_IDENTIFIER to match digits at string end (e.g., "test123")
 const IDENTIFIER = /([\p{Alpha}\p{N}_]|$)/u;
@@ -26,7 +46,7 @@ const preserveCamelCase = (string, toLowerCase, toUpperCase, preserveConsecutive
 		// Default true for early positions activates the preserveConsecutiveUppercase guard
 		isLastLastCharPreserved = index > 2 ? string[index - 3] === '-' : true;
 
-		if (isLastCharLower && UPPERCASE.test(character)) {
+		if (isLastCharLower && isUpperCase(character)) {
 			// FooBar → Foo-Bar (insert separator before uppercase)
 			string = string.slice(0, index) + '-' + string.slice(index);
 			isLastCharLower = false;
@@ -36,7 +56,7 @@ const preserveCamelCase = (string, toLowerCase, toUpperCase, preserveConsecutive
 		} else if (
 			isLastCharUpper
 			&& isLastLastCharUpper
-			&& LOWERCASE.test(character)
+			&& isLowerCase(character)
 			&& (!isLastLastCharPreserved || preserveConsecutiveUppercase)
 		) {
 			// FOOBar → FOO-Bar
@@ -70,15 +90,15 @@ const processWithCasePreservation = (input, toLowerCase, preserveConsecutiveUppe
 
 	for (let index = 0; index < characters.length; index++) {
 		const character = characters[index];
-		const isUpperCase = UPPERCASE.test(character);
-		const nextCharIsUpperCase = index + 1 < characters.length && UPPERCASE.test(characters[index + 1]);
+		const charIsUpperCase = isUpperCase(character);
+		const nextCharIsUpperCase = index + 1 < characters.length && isUpperCase(characters[index + 1]);
 
 		if (previousWasNumber && /[\p{Alpha}]/u.test(character)) {
 			// Letter after number - preserve original case
 			result += character;
 			previousWasNumber = false;
-			previousWasUppercase = isUpperCase;
-		} else if (preserveConsecutiveUppercase && isUpperCase && (previousWasUppercase || nextCharIsUpperCase)) {
+			previousWasUppercase = charIsUpperCase;
+		} else if (preserveConsecutiveUppercase && charIsUpperCase && (previousWasUppercase || nextCharIsUpperCase)) {
 			// Part of consecutive uppercase sequence when preserveConsecutiveUppercase is true - keep it
 			result += character;
 			previousWasUppercase = true;
